@@ -42,14 +42,16 @@ if not exist "%LOG_FILE%" (
     echo Date,Time,Packet_Size_Bytes,Source_IP > "%LOG_FILE%"
 )
 
-:: --- START TSHARK ---
-:: -E separator=,  -> Forces CSV formatting
-:: -E header=n     -> We handle the header manually to avoid repeats
-"C:\Program Files\Wireshark\tshark.exe" -i %ACTIVE_IF% -l -t ad -f "port %QB_PORT%" ^
--T fields -e frame.time_delta_displayed -e frame.time -e frame.len -e ip.src ^
--E separator=, -E quote=d >> "%LOG_FILE%"
+:: --- START AGGREGATED LOGGING ---
+:: We use a cleaner variable passing method to avoid quote hell
+set "PS_COMMAND=$total = 0; $date = Get-Date -Format 'yyyy-MM-dd'; & 'C:\Program Files\Wireshark\tshark.exe' -i %ACTIVE_IF% -l -f 'port %QB_PORT%' -T fields -e frame.len | ForEach-Object { $total += [long]$_; $now = Get-Date -Format 'yyyy-MM-dd'; if ($now -ne $date) { \"$date,$($total/1MB)\" | Add-Content '%LOG_FILE%'; $total = 0; $date = $now; } }; \"$date,$($total/1MB)\" | Add-Content '%LOG_FILE%'"
+
+powershell -ExecutionPolicy Bypass -Command "%PS_COMMAND%"
 
 if %errorlevel% neq 0 (
-    echo [ERROR] TShark failed. Check Admin rights.
+    echo.
+    echo [ERROR] TShark or PowerShell encountered an issue.
+    echo Check if TShark is installed at the correct path.
+    echo Ensure you are running as Administrator.
     pause
 )
