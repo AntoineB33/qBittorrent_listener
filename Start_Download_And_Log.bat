@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: --- LOAD CONFIGURATION ---
-set CONFIG_FILE=config.txt
+set CONFIG_FILE=C:\Users\antoi\Documents\Home\health\entertainment\videos\qBittorrent_listener\config.txt
 
 if not exist %CONFIG_FILE% (
     echo Error: %CONFIG_FILE% not found.
@@ -17,7 +17,7 @@ for /f "delims=" %%x in (%CONFIG_FILE%) do (
 :: ---------------------
 
 echo Starting qBittorrent...
-start "" %QB_PATH%
+start "" "%QB_PATH%"
 
 echo.
 echo qBittorrent started.
@@ -29,4 +29,4 @@ echo DO NOT CLOSE THIS WINDOW. Run "Stop_Download.bat" to finish.
 :: -i 1 selects the first network interface (Change to 2 or 3 if you have multiple)
 :: -f filters traffic only for the qBittorrent port to keep the log readable
 :: >> appends to the log file
-"C:\Program Files\Wireshark\tshark.exe" -i 1 -f "tcp port %QB_PORT% or udp port %QB_PORT%" >> %LOG_FILE%
+"C:\Program Files\Wireshark\tshark.exe" -i 1 -f "tcp port %QB_PORT% or udp port %QB_PORT%" >> "%LOG_FILE%"
