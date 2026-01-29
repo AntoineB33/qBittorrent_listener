@@ -10,24 +10,21 @@ if not exist "%CONFIG_FILE%" (
     exit /b
 )
 
-:: Load variables (ensure config.txt has key=value format)
 for /f "usebackq delims=" %%x in ("%CONFIG_FILE%") do set "%%x"
 
-:: Verify variables loaded
-if "%QB_PATH%"=="" (echo [ERROR] QB_PATH is missing from config & pause & exit /b)
+:: Verify variables
+if "%QB_PATH%"=="" (echo [ERROR] QB_PATH missing & pause & exit /b)
+if "%LOG_FILE%"=="" (echo [ERROR] LOG_FILE missing & pause & exit /b)
 
 echo Starting qBittorrent...
 start "" "%QB_PATH%"
 
-echo.
-echo Searching for active network interface...
-
+:: --- FIND INTERFACE ---
 set "ACTIVE_IF="
 for /f "tokens=1*" %%a in ('"C:\Program Files\Wireshark\tshark.exe" -D') do (
     echo %%b | findstr /i "Wi-Fi Ethernet" >nul
     if !errorlevel! equ 0 (
         set "IF_INDEX=%%a"
-        :: Remove the trailing dot
         set "ACTIVE_IF=!IF_INDEX:.=!"
         set "IF_NAME=%%b"
         goto :FOUND_IF
@@ -35,20 +32,24 @@ for /f "tokens=1*" %%a in ('"C:\Program Files\Wireshark\tshark.exe" -D') do (
 )
 
 :FOUND_IF
-if "%ACTIVE_IF%"=="" (
-    echo [ERROR] Could not find a Wi-Fi or Ethernet interface.
-    pause
-    exit /b
-)
+if "%ACTIVE_IF%"=="" (echo [ERROR] No interface found & pause & exit /b)
 
-echo Found Active Interface: %IF_NAME% (Index %ACTIVE_IF%)
-echo Target Log: %LOG_FILE%
+echo Logging to: %LOG_FILE%
 echo --------------------------------------------------
 
-:: Start TShark
-"C:\Program Files\Wireshark\tshark.exe" -i %ACTIVE_IF% -l -t ad -f "port %QB_PORT%" -T fields -e frame.time -e frame.len -e ip.src >> "%LOG_FILE%"
+:: Header creation (only if file doesn't exist)
+if not exist "%LOG_FILE%" (
+    echo Date,Time,Packet_Size_Bytes,Source_IP > "%LOG_FILE%"
+)
+
+:: --- START TSHARK ---
+:: -E separator=,  -> Forces CSV formatting
+:: -E header=n     -> We handle the header manually to avoid repeats
+"C:\Program Files\Wireshark\tshark.exe" -i %ACTIVE_IF% -l -t ad -f "port %QB_PORT%" ^
+-T fields -e frame.time_delta_displayed -e frame.time -e frame.len -e ip.src ^
+-E separator=, -E quote=d >> "%LOG_FILE%"
 
 if %errorlevel% neq 0 (
-    echo [ERROR] TShark failed to start. Are you running as Admin?
+    echo [ERROR] TShark failed. Check Admin rights.
     pause
 )
