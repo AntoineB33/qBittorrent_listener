@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: --- LOAD CONFIGURATION ---
-set "FOLDER=C:\Users\antoi\Documents\Home\health\entertainment\videos\qBittorrent_listener"
+set "FOLDER=%~dp0"
 set "CONFIG_FILE=%FOLDER%\config.txt"
 
 if not exist "%CONFIG_FILE%" (echo [ERROR] Config missing & pause & exit /b)
